@@ -1,5 +1,5 @@
 const express = require('express');
-const connectDB = require('./config/db');
+const connectDB = require('./src/config/db');
 const cors = require('cors');
 require('dotenv').config();
 
@@ -32,7 +32,7 @@ connectDB()
     });
 
 // Routes
-app.use('/api/auth', require('./routes/authRouter'));
+app.use('/api/auth', require('./src/routes/authRouter'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
