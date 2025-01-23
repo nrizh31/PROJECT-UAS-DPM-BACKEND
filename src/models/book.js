@@ -6,47 +6,38 @@ const bookSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
-    movieData: {
-        movieId: {
-            type: String,
-            required: true
-        },
-        title: {
-            type: String,
-            required: true
-        },
-        poster_path: {
-            type: String,
-            required: true
-        }
+    movieId: {
+        type: Number,
+        required: true
     },
-    bookingDetails: {
-        date: {
-            type: Date,
-            required: true
-        },
-        time: {
-            type: String,
-            required: true
-        },
-        seats: [{
-            type: String,
-            required: true
-        }],
-        totalPrice: {
-            type: Number,
-            required: true
-        }
+    movieTitle: {
+        type: String,
+        required: true
+    },
+    date: {
+        type: String,
+        required: true
+    },
+    time: {
+        type: String,
+        required: true
+    },
+    seats: {
+        type: [String],
+        required: true
+    },
+    totalPrice: {
+        type: Number,
+        required: true
     },
     status: {
         type: String,
-        enum: ['pending', 'completed'],
-        default: 'completed'
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
+        enum: ['pending', 'completed', 'cancelled'],
+        default: 'pending'
     }
+}, {
+    timestamps: true
 });
 
-module.exports = mongoose.model('Book', bookSchema);
+const Book = mongoose.model('Book', bookSchema);
+module.exports = Book;

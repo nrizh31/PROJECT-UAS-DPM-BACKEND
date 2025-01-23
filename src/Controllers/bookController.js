@@ -5,8 +5,17 @@ const bcrypt = require('bcryptjs');
 exports.verifyPassword = async (req, res) => {
     try {
         const { username, password } = req.body;
-        const user = await User.findOne({ username });
+        
+        // Validasi input
+        if (!username || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Username dan password harus diisi'
+            });
+        }
 
+        // Cari user
+        const user = await User.findOne({ username });
         if (!user) {
             return res.status(400).json({
                 success: false,
@@ -14,6 +23,7 @@ exports.verifyPassword = async (req, res) => {
             });
         }
 
+        // Verifikasi password menggunakan bcrypt
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({
@@ -22,15 +32,18 @@ exports.verifyPassword = async (req, res) => {
             });
         }
 
+        // Password benar
         res.json({
             success: true,
-            message: 'Password verified'
+            message: 'Password verified successfully'
         });
+        
     } catch (error) {
         console.error('Verify password error:', error);
         res.status(500).json({
             success: false,
-            message: 'Server error'
+            message: 'Server error',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 };

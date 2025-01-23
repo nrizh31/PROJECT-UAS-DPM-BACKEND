@@ -2,11 +2,24 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
+const bookRouter = require('./src/routes/bookRouter');
 
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: [
+        'http://localhost:19006', 
+        'http://192.168.1.5:19006', 
+        'exp://192.168.1.5:19000',
+        'http://10.0.2.2:19006', // Android Emulator
+        'http://localhost:19000',
+        'exp://localhost:19000'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
 app.use(express.json());
 
 // Request logger
@@ -19,6 +32,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', require('./src/routes/authRouter'));
 app.use('/api/users', require('./src/routes/userRouter'));
 app.use('/api/booking', require('./src/routes/bookRouter'));
+app.use('/api/book', bookRouter);
 
 // Test route
 app.get('/api/test', (req, res) => {
