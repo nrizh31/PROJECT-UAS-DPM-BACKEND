@@ -6,25 +6,21 @@ const bookRouter = require('./src/routes/bookRouter');
 
 const app = express();
 
-// Middleware
+// Improved CORS configuration
 app.use(cors({
-    origin: [
-        'http://localhost:19006', 
-        'http://192.168.1.5:19006', 
-        'exp://192.168.1.5:19000',
-        'http://10.0.2.2:19006', // Android Emulator
-        'http://localhost:19000',
-        'exp://localhost:19000'
-    ],
+    origin: '*', // Temporarily allow all origins for testing
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));
+
 app.use(express.json());
 
-// Request logger
+// Better request logger
 app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    console.log('Headers:', req.headers);
+    console.log('Body:', req.body);
     next();
 });
 
@@ -34,43 +30,47 @@ app.use('/api/users', require('./src/routes/userRouter'));
 app.use('/api/booking', require('./src/routes/bookRouter'));
 app.use('/api/book', bookRouter);
 
-// Test route
+// Test route with detailed response
 app.get('/api/test', (req, res) => {
     res.json({ 
         message: 'API is working',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV,
+        mongodbUri: process.env.MONGODB_URI ? 'Configured' : 'Missing'
     });
 });
 
-// Connect to MongoDB
-const connectDB = require('./src/config/db');
-connectDB();
-
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    // Log all registered routes
-    console.log('Registered routes:');
-    app._router.stack
-        .filter(r => r.route)
-        .forEach(r => {
-            console.log(`${Object.keys(r.route.methods)} ${r.route.path}`);
+// Connect to MongoDB with better error handling
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => {
+        console.log('MongoDB Connected Successfully');
+        
+        // Start server only after DB connection
+        const PORT = process.env.PORT || 5000;
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`Server running on port ${PORT}`);
+            console.log('Available on:');
+            console.log(`  - http://localhost:${PORT}`);
+            console.log(`  - http://127.0.0.1:${PORT}`);
+            console.log(`  - http://192.168.1.5:${PORT}`);
         });
-});
-
-// 404 handler
-app.use((req, res, next) => {
-    console.log('404 hit for:', req.method, req.url);
-    res.status(404).json({
-        success: false,
-        message: `Route ${req.method} ${req.url} not found`
+    })
+    .catch(err => {
+        console.error('MongoDB connection error:', err);
+        process.exit(1);
     });
-});
 
-// Error handler
+// Improved error handler
 app.use((err, req, res, next) => {
-    console.error('Global error:', err);
+    console.error('Global error:', {
+        message: err.message,
+        stack: err.stack,
+        path: req.path,
+        method: req.method,
+        body: req.body,
+        headers: req.headers
+    });
+    
     res.status(err.status || 500).json({
         success: false,
         message: err.message || 'Internal server error',

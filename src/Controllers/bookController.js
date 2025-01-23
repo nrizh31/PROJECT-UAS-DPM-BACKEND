@@ -75,7 +75,20 @@ exports.createBooking = async (req, res) => {
 
 exports.getUserBookings = async (req, res) => {
     try {
-        const bookings = await Book.find({ userId: req.user.id })
+        // Ubah untuk menggunakan username sebagai parameter
+        const { username } = req.params;
+        
+        // Cari user ID berdasarkan username
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User tidak ditemukan'
+            });
+        }
+
+        // Cari booking berdasarkan userId
+        const bookings = await Book.find({ userId: user._id })
             .sort({ createdAt: -1 });
 
         res.json({

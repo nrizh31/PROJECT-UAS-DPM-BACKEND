@@ -15,18 +15,28 @@ router.post('/create', auth, bookController.createBooking);
 // Ambil history booking user
 router.get('/user-bookings', auth, bookController.getUserBookings);
 
+// Tambahkan endpoint baru untuk mendapatkan booking berdasarkan username
+router.get('/history/:username', bookController.getUserBookings);
+
 // Endpoint verifikasi password dan pembuatan booking
-router.post('/verify-payment', auth, async (req, res) => {
+router.post('/verify-payment', async (req, res) => {
     try {
         const { username, password, movieData, bookingDetails } = req.body;
         
-        // Log untuk debugging
-        console.log('Request received:', { username, movieData, bookingDetails });
-        console.log('User from token:', req.user);
+        console.log('Verify payment request received:', {
+            username,
+            movieData: movieData?.title,
+            bookingDetails: {
+                date: bookingDetails?.date,
+                time: bookingDetails?.time,
+                seats: bookingDetails?.seats
+            }
+        });
 
         // Cari user berdasarkan username
         const user = await User.findOne({ username });
         if (!user) {
+            console.log('User not found:', username);
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
@@ -36,6 +46,7 @@ router.post('/verify-payment', auth, async (req, res) => {
         // Verifikasi password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
+            console.log('Invalid password for user:', username);
             return res.status(401).json({
                 success: false,
                 message: 'Invalid password'
@@ -55,6 +66,7 @@ router.post('/verify-payment', auth, async (req, res) => {
         });
 
         await booking.save();
+        console.log('Booking created successfully:', booking._id);
 
         res.status(200).json({
             success: true,
