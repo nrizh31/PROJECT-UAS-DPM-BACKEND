@@ -1,5 +1,5 @@
 const express = require('express');
-const connectDB = require('./src/config/db');
+const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 
@@ -9,48 +9,33 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Logging middleware
-app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-    console.log('Request Body:', req.body);
-    next();
-});
-
-// Test route
-app.get('/test', (req, res) => {
-    res.json({ message: 'API is working' });
-});
-
-// Connect Database
-connectDB()
+// MongoDB Connection
+mongoose.connect(process.env.MONGODB_URI)
     .then(() => {
         console.log('MongoDB Connected Successfully');
     })
     .catch((err) => {
         console.error('MongoDB Connection Error:', err);
-        process.exit(1);
     });
+
+// Monitor MongoDB connection
+mongoose.connection.on('connected', () => {
+    console.log('Mongoose connected to MongoDB');
+});
+
+mongoose.connection.on('error', (err) => {
+    console.error('Mongoose connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+    console.log('Mongoose disconnected from MongoDB');
+});
 
 // Routes
 app.use('/api/auth', require('./src/routes/authRouter'));
-app.use('/api/movies', require('./src/routes/movieRoutes'));
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    res.status(500).json({ 
-        message: 'Something broke!',
-        error: err.message,
-        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-    });
-});
 
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
 
-// Handle server errors
-server.on('error', (error) => {
-    console.error('Server error:', error);
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });

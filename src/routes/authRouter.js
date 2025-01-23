@@ -1,11 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const { register, login } = require('../Controllers/userController'); // Pastikan path ini benar
+const userController = require('../Controllers/userController');
+const auth = require('../middleware/auth');
 
-// Register Route
-router.post('/register', register);
+// Debug route
+router.get('/test', (req, res) => {
+    res.json({ message: 'Auth router is working' });
+});
 
-// Login Route
-router.post('/login', login);
+// Auth routes
+router.post('/register', userController.register);
+router.post('/login', userController.login);
+router.get('/profile', auth, userController.getProfile);
+
+// Debug log untuk melihat route yang terdaftar
+console.log('Registered routes:', router.stack.map(r => r.route?.path).filter(Boolean));
 
 module.exports = router;

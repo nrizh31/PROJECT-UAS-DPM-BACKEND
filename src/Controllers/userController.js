@@ -95,38 +95,23 @@ exports.register = async (req, res) => {
 
 // Login Controller
 exports.login = async (req, res) => {
-    console.log('Login request received:', req.body);
     try {
         const { email, password } = req.body;
+        console.log('Login attempt:', { email }); // Debug log
 
         // Validasi input
         if (!email || !password) {
+            console.log('Missing credentials');
             return res.status(400).json({
                 success: false,
                 message: 'Email dan password harus diisi'
             });
         }
 
-        // Handle admin login
-        if (email === 'admin@tiketku.com' && password === 'dpmkel7') {
-            return res.json({
-                success: true,
-                data: {
-                    token: 'admin-token',
-                    user: {
-                        id: 'admin',
-                        username: 'admin',
-                        email: 'admin@tiketku.com',
-                        nama: 'Administrator'
-                    }
-                }
-            });
-        }
-
-        // Check if user exists by email
-        console.log('Finding user...');
+        // Cari user berdasarkan email
         const user = await User.findOne({ email });
-        
+        console.log('User found:', user ? 'Yes' : 'No'); // Debug log
+
         if (!user) {
             console.log('User not found');
             return res.status(400).json({
@@ -135,35 +120,35 @@ exports.login = async (req, res) => {
             });
         }
 
-        // Check password
-        console.log('Verifying password...');
+        // Verifikasi password
         const isMatch = await bcrypt.compare(password, user.password);
-        
+        console.log('Password match:', isMatch); // Debug log
+
         if (!isMatch) {
-            console.log('Invalid password');
+            console.log('Password incorrect');
             return res.status(400).json({
                 success: false,
                 message: 'Email atau password salah'
             });
         }
 
-        console.log('Login successful for user:', user._id);
-
-        // Create token
+        // Generate token
         const token = jwt.sign(
             { id: user._id },
             process.env.JWT_SECRET || 'tiketkusecret2024',
             { expiresIn: '30d' }
         );
 
+        // Success response
+        console.log('Login successful for user:', user.email);
         res.json({
             success: true,
             data: {
                 token,
                 user: {
                     id: user._id,
-                    username: user.username,
                     email: user.email,
+                    username: user.username,
                     nama: user.nama
                 }
             }
@@ -175,6 +160,37 @@ exports.login = async (req, res) => {
             success: false,
             message: 'Terjadi kesalahan pada server',
             error: error.message
+        });
+    }
+};
+
+exports.getProfile = async (req, res) => {
+    try {
+        console.log('Getting profile for user:', req.user.id);
+        
+        const user = await User.findById(req.user.id).select('-password');
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User tidak ditemukan'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                id: user._id,
+                email: user.email,
+                username: user.username,
+                nama: user.nama
+            }
+        });
+    } catch (error) {
+        console.error('Get profile error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan pada server'
         });
     }
 };
