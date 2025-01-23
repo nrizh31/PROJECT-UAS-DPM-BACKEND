@@ -1,5 +1,5 @@
 const User = require('../models/user');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 // Register Controller
@@ -93,82 +93,12 @@ exports.register = async (req, res) => {
     }
 }; 
 
-// Login Controller
-exports.login = async (req, res) => {
+// Get profile function
+const getProfile = async (req, res) => {
     try {
-        const { email, password } = req.body;
-        console.log('Login attempt:', { email }); // Debug log
-
-        // Validasi input
-        if (!email || !password) {
-            console.log('Missing credentials');
-            return res.status(400).json({
-                success: false,
-                message: 'Email dan password harus diisi'
-            });
-        }
-
-        // Cari user berdasarkan email
-        const user = await User.findOne({ email });
-        console.log('User found:', user ? 'Yes' : 'No'); // Debug log
-
-        if (!user) {
-            console.log('User not found');
-            return res.status(400).json({
-                success: false,
-                message: 'Email atau password salah'
-            });
-        }
-
-        // Verifikasi password
-        const isMatch = await bcrypt.compare(password, user.password);
-        console.log('Password match:', isMatch); // Debug log
-
-        if (!isMatch) {
-            console.log('Password incorrect');
-            return res.status(400).json({
-                success: false,
-                message: 'Email atau password salah'
-            });
-        }
-
-        // Generate token
-        const token = jwt.sign(
-            { id: user._id },
-            process.env.JWT_SECRET || 'tiketkusecret2024',
-            { expiresIn: '30d' }
-        );
-
-        // Success response
-        console.log('Login successful for user:', user.email);
-        res.json({
-            success: true,
-            data: {
-                token,
-                user: {
-                    id: user._id,
-                    email: user.email,
-                    username: user.username,
-                    nama: user.nama
-                }
-            }
-        });
-
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Terjadi kesalahan pada server',
-            error: error.message
-        });
-    }
-};
-
-exports.getProfile = async (req, res) => {
-    try {
-        console.log('Getting profile for user:', req.user.id);
-        
-        const user = await User.findById(req.user.id).select('-password');
+        // Dapatkan user berdasarkan parameter id atau username
+        const { userId } = req.params;
+        const user = await User.findById(userId).select('-password');
         
         if (!user) {
             return res.status(404).json({
@@ -183,14 +113,61 @@ exports.getProfile = async (req, res) => {
                 id: user._id,
                 email: user.email,
                 username: user.username,
-                nama: user.nama
+                nama: user.nama,
+                role: user.isAdmin ? 'admin' : 'user'
             }
         });
     } catch (error) {
         console.error('Get profile error:', error);
         res.status(500).json({
             success: false,
-            message: 'Terjadi kesalahan pada server'
+            message: 'Terjadi kesalahan saat mengambil profile'
         });
     }
+};
+
+// Get all users function
+const getAllUsers = async (req, res) => {
+    try {
+        const users = await User.find().select('-password');
+        res.json({
+            success: true,
+            data: users
+        });
+    } catch (error) {
+        console.error('Get all users error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan saat mengambil data users'
+        });
+    }
+};
+
+// Update profile function
+exports.updateProfile = async (req, res) => {
+    try {
+        const { nama, email } = req.body;
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            { nama, email },
+            { new: true }
+        ).select('-password');
+
+        res.json({
+            success: true,
+            user,
+            message: 'Profile updated successfully'
+        });
+    } catch (error) {
+        console.error('Update profile error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update profile'
+        });
+    }
+};
+
+module.exports = {
+    getProfile,
+    getAllUsers
 };

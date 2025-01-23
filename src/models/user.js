@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 
 const userSchema = new mongoose.Schema({
     username: {
@@ -31,7 +32,20 @@ const userSchema = new mongoose.Schema({
         default: Date.now
     }
 }, {
-    collection: 'user' // Memastikan menggunakan collection 'user'
+    collection: 'user'
 });
+
+// Pre-save hook untuk hash password sebelum disimpan
+userSchema.pre('save', async function(next) {
+    if (this.isModified('password')) {
+        this.password = await bcrypt.hash(this.password, 10);
+    }
+    next();
+});
+
+// Method untuk verifikasi password
+userSchema.methods.verifyPassword = async function(password) {
+    return await bcrypt.compare(password, this.password);
+};
 
 module.exports = mongoose.model('User', userSchema);
