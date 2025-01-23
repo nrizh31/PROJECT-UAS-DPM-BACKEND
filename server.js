@@ -33,6 +33,7 @@ connectDB()
 
 // Routes
 app.use('/api/auth', require('./src/routes/authRouter'));
+app.use('/api/movies', require('./src/routes/movieRoutes'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

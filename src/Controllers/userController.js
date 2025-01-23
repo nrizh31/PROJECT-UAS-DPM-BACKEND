@@ -107,7 +107,23 @@ exports.login = async (req, res) => {
             });
         }
 
-        // Check if user exists
+        // Handle admin login
+        if (email === 'admin@tiketku.com' && password === 'dpmkel7') {
+            return res.json({
+                success: true,
+                data: {
+                    token: 'admin-token',
+                    user: {
+                        id: 'admin',
+                        username: 'admin',
+                        email: 'admin@tiketku.com',
+                        nama: 'Administrator'
+                    }
+                }
+            });
+        }
+
+        // Check if user exists by email
         console.log('Finding user...');
         const user = await User.findOne({ email });
         
@@ -139,22 +155,6 @@ exports.login = async (req, res) => {
             process.env.JWT_SECRET || 'tiketkusecret2024',
             { expiresIn: '30d' }
         );
-
-        // Handle admin login
-        if (email === 'admin@tiketku.com' && password === 'dpmkel7') {
-            return res.json({
-                success: true,
-                data: {
-                    token: 'admin-token',
-                    user: {
-                        id: 'admin',
-                        username: 'admin',
-                        email: 'admin@tiketku.com',
-                        nama: 'Administrator'
-                    }
-                }
-            });
-        }
 
         res.json({
             success: true,
