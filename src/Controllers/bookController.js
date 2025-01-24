@@ -1,12 +1,11 @@
 const Book = require('../models/book');
 const User = require('../models/user');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 
 exports.verifyPassword = async (req, res) => {
     try {
         const { username, password } = req.body;
         
-        // Validasi input
         if (!username || !password) {
             return res.status(400).json({
                 success: false,
@@ -14,7 +13,6 @@ exports.verifyPassword = async (req, res) => {
             });
         }
 
-        // Cari user
         const user = await User.findOne({ username });
         if (!user) {
             return res.status(400).json({
@@ -23,7 +21,6 @@ exports.verifyPassword = async (req, res) => {
             });
         }
 
-        // Verifikasi password menggunakan bcrypt
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({
@@ -32,7 +29,6 @@ exports.verifyPassword = async (req, res) => {
             });
         }
 
-        // Password benar
         res.json({
             success: true,
             message: 'Password verified successfully'
@@ -75,10 +71,8 @@ exports.createBooking = async (req, res) => {
 
 exports.getUserBookings = async (req, res) => {
     try {
-        // Ubah untuk menggunakan username sebagai parameter
         const { username } = req.params;
         
-        // Cari user ID berdasarkan username
         const user = await User.findOne({ username });
         if (!user) {
             return res.status(404).json({
@@ -87,7 +81,6 @@ exports.getUserBookings = async (req, res) => {
             });
         }
 
-        // Cari booking berdasarkan userId
         const bookings = await Book.find({ userId: user._id })
             .sort({ createdAt: -1 });
 
@@ -102,4 +95,4 @@ exports.getUserBookings = async (req, res) => {
             message: 'Terjadi kesalahan saat mengambil data booking'
         });
     }
-}; 
+};

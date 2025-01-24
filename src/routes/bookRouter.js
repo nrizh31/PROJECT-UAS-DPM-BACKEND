@@ -1,24 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const bookController = require('../Controllers/bookController');
+const bookController = require('../controllers/bookController');
 const auth = require('../middleware/auth');
 const User = require('../models/user');
 const Book = require('../models/book');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 
-// Verifikasi password - hapus auth middleware untuk endpoint ini
 router.post('/verify-password', bookController.verifyPassword);
-
-// Buat booking baru
 router.post('/create', auth, bookController.createBooking);
-
-// Ambil history booking user
 router.get('/user-bookings', auth, bookController.getUserBookings);
-
-// Tambahkan endpoint baru untuk mendapatkan booking berdasarkan username
 router.get('/history/:username', bookController.getUserBookings);
 
-// Endpoint verifikasi password dan pembuatan booking
 router.post('/verify-payment', async (req, res) => {
     try {
         const { username, password, movieData, bookingDetails } = req.body;
@@ -33,7 +25,6 @@ router.post('/verify-payment', async (req, res) => {
             }
         });
 
-        // Cari user berdasarkan username
         const user = await User.findOne({ username });
         if (!user) {
             console.log('User not found:', username);
@@ -43,7 +34,6 @@ router.post('/verify-payment', async (req, res) => {
             });
         }
 
-        // Verifikasi password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             console.log('Invalid password for user:', username);
@@ -53,7 +43,6 @@ router.post('/verify-payment', async (req, res) => {
             });
         }
 
-        // Buat booking baru
         const booking = new Book({
             userId: user._id,
             movieId: movieData.id,
@@ -84,4 +73,4 @@ router.post('/verify-payment', async (req, res) => {
     }
 });
 
-module.exports = router; 
+module.exports = router;

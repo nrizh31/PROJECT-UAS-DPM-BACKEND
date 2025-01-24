@@ -5,18 +5,8 @@ const jwt = require('jsonwebtoken');
 const authController = {
     register: async (req, res) => {
         try {
-            console.log('Register request received:', req.body);
             const { username, email, password, nama } = req.body;
             
-            // Validasi input
-            if (!username || !email || !password || !nama) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Semua field harus diisi'
-                });
-            }
-
-            // Check existing user
             const existingUser = await User.findOne({ 
                 $or: [{ username }, { email }] 
             });
@@ -28,17 +18,16 @@ const authController = {
                 });
             }
 
-            // Create user
-            const hashedPassword = await bcrypt.hash(password, 10);
+            // Buat user baru tanpa hashing manual
             const user = new User({
                 username,
                 email,
-                password: hashedPassword,
+                password, // Password akan di-hash oleh pre-save hook
                 nama
             });
 
             await user.save();
-            console.log('User created successfully:', user._id);
+            console.log('User saved successfully');
 
             res.status(201).json({
                 success: true,
@@ -56,20 +45,11 @@ const authController = {
 
     login: async (req, res) => {
         try {
-            console.log('Login request received:', req.body);
             const { email, password } = req.body;
+            console.log('Login attempt for:', email);
 
-            // Validasi input
-            if (!email || !password) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Email dan password harus diisi'
-                });
-            }
-
-            // Cari user berdasarkan email
             const user = await User.findOne({ email });
-            console.log('User found:', user ? 'Yes' : 'No');
+            console.log('User found:', !!user);
 
             if (!user) {
                 return res.status(401).json({
@@ -79,8 +59,9 @@ const authController = {
             }
 
             // Verifikasi password
-            const isPasswordValid = await bcrypt.compare(password, user.password);
-            console.log('Password valid:', isPasswordValid ? 'Yes' : 'No');
+            console.log('Verifying password...');
+            const isPasswordValid = await user.verifyPassword(password);
+            console.log('Password verification result:', isPasswordValid);
 
             if (!isPasswordValid) {
                 return res.status(401).json({
@@ -91,21 +72,19 @@ const authController = {
 
             // Generate token
             const token = jwt.sign(
-                { userId: user._id, email: user.email },
+                { userId: user._id },
                 process.env.JWT_SECRET,
                 { expiresIn: '24h' }
             );
 
-            // Kirim response sukses
             res.status(200).json({
                 success: true,
-                message: 'Login berhasil',
                 data: {
                     token,
                     user: {
                         id: user._id,
-                        username: user.username,
                         email: user.email,
+                        username: user.username,
                         nama: user.nama
                     }
                 }
@@ -115,45 +94,10 @@ const authController = {
             console.error('Login error:', error);
             res.status(500).json({
                 success: false,
-                message: 'Terjadi kesalahan pada server',
-                error: process.env.NODE_ENV === 'development' ? error.message : undefined
-            });
-        }
-    },
-
-    verifyPassword: async (req, res) => {
-        try {
-            const { username, password } = req.body;
-            const user = await User.findOne({ username });
-            
-            if (!user) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'User not found'
-                });
-            }
-
-            const isMatch = await user.verifyPassword(password);
-            
-            if (!isMatch) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Password incorrect'
-                });
-            }
-
-            res.json({
-                success: true,
-                message: 'Password verified'
-            });
-        } catch (error) {
-            console.error('Verify password error:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Server error'
+                message: 'Server error during login'
             });
         }
     }
 };
 
-module.exports = authController; 
+module.exports = authController;
