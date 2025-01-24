@@ -1,43 +1,25 @@
 const mongoose = require('mongoose');
 
 const bookSchema = new mongoose.Schema({
-    userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    movieId: {
-        type: Number,
-        required: true
-    },
-    movieTitle: {
+    username: {
         type: String,
         required: true
     },
-    date: {
-        type: String,
-        required: true
+    movieData: {
+        id: String,
+        title: String,
+        poster_path: String
     },
-    time: {
-        type: String,
-        required: true
+    bookingDetails: {
+        date: String,
+        time: String,
+        selectedSeats: [String],
+        totalAmount: Number
     },
-    seats: {
-        type: [String],
-        required: true
-    },
-    totalPrice: {
-        type: Number,
-        required: true
-    },
-    status: {
-        type: String,
-        enum: ['pending', 'completed', 'cancelled'],
-        default: 'pending'
+    createdAt: {
+        type: Date,
+        default: Date.now
     }
-}, {
-    timestamps: true
 });
 
-const Book = mongoose.model('Book', bookSchema);
-module.exports = Book;
+module.exports = mongoose.model('Book', bookSchema);

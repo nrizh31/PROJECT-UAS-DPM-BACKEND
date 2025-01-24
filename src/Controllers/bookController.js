@@ -4,42 +4,69 @@ const bcrypt = require('bcrypt');
 
 exports.verifyPassword = async (req, res) => {
     try {
-        const { username, password } = req.body;
-        
-        if (!username || !password) {
+        const { username, password, movieData, bookingDetails } = req.body;
+        console.log('Debug - Full request body:', req.body);
+
+        // Validate required fields
+        if (!bookingDetails || !bookingDetails.totalAmount) {
             return res.status(400).json({
                 success: false,
-                message: 'Username dan password harus diisi'
+                message: 'Booking details and total amount are required'
             });
         }
 
         const user = await User.findOne({ username });
         if (!user) {
-            return res.status(400).json({
+            return res.status(404).json({
                 success: false,
-                message: 'User tidak ditemukan'
+                message: 'User not found'
             });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(400).json({
+            return res.status(401).json({
                 success: false,
-                message: 'Password salah'
+                message: 'Invalid password'
             });
         }
 
+        // Create new booking with validated data
+        const newBooking = new Book({
+            username: username,
+            movieData: {
+                id: movieData.id,
+                title: movieData.title,
+                poster_path: movieData.poster_path
+            },
+            bookingDetails: {
+                date: bookingDetails.date,
+                time: bookingDetails.time,
+                selectedSeats: bookingDetails.selectedSeats || [],
+                totalAmount: bookingDetails.totalAmount
+            }
+        });
+
+        console.log('Debug - New booking object:', newBooking);
+
+        await newBooking.save();
+        console.log('Booking saved successfully:', newBooking._id);
+
         res.json({
             success: true,
-            message: 'Password verified successfully'
+            message: 'Booking created successfully',
+            booking: newBooking
         });
-        
+
     } catch (error) {
-        console.error('Verify password error:', error);
+        console.error('Detailed booking error:', {
+            message: error.message,
+            stack: error.stack
+        });
         res.status(500).json({
             success: false,
-            message: 'Server error',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            message: 'Internal server error',
+            error: error.message
         });
     }
 };
